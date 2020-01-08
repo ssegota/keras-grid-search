@@ -11,6 +11,9 @@ from keras.layers import Dense, Input
 import keras
 from uuid import uuid4
 from keras.models import model_from_json
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
 """
 param_dict - dictionary sa parametrime
