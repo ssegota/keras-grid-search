@@ -11,6 +11,7 @@ from keras.layers import Dense, Input
 import keras
 from uuid import uuid4
 from keras.models import model_from_json
+#supress warnings because they serve no purpose
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
@@ -92,9 +93,10 @@ layers - lista tupleova koji sadrže različite konfiguracije mreže - (list of 
 activations - lista tupleova iste duljine kao i gornjih layera, koji sadrže aktivacije za svaki od gore navedenih slojeva - (list of tuple of Strings)
 adjusted_optimizers - lista optimizera dobivenih korištenjem funkcije optimizer_get() - (list of keras.Optimizers)
 epochs - lista sa brojvima epoha - (list of ints)
+verbose - ispis model summarya i training informationa - (bool)
 
 """
-def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs):
+def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs, verbose=True):
 
     param_combinations = [[l_,la_,a_,op_,e_] for l_ in loss
                                                   for la_ in layers
@@ -102,16 +104,21 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
                                                   for op_ in adjusted_optimizers
                                                   for e_ in epochs]
         
-                                      
+    
+    print("Number of Grid Search Components:", len(param_combinations))
     #add layers and appropriate activations
+    counter=0
     for p in param_combinations:
+        print(round(counter/len(param_combinations)*100,2),"% DONE")
+        #increase counter
+        counter-=-1
         #print(p)
         model = Sequential()
         firstpass = True
         if len(p[1]) != len(p[2]):
             continue
         for i,j in zip(p[1], p[2]):
-            print(i,j)
+            #add input layer info the the first layer added to model
             if firstpass:
                 model.add(Dense(i, activation=j, name=str(i)+str(j)+str(uuid4()),input_shape=input_shape_))
                 firstpass=False
@@ -125,8 +132,10 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
         model.compile(loss=p[0],
                       optimizer=p[3],
                       metrics=['accuracy'])
-        model.fit(X,Y, epochs=p[4])
-        model.summary()
+        model.fit(X,Y, epochs=p[4], verbose=verbose)
+        #prin model summaries
+        if verbose:
+            model.summary()
         #save model
         name=str(uuid4())
         json_data=model.to_json()
@@ -185,4 +194,4 @@ dataset = loadtxt('pima-indians-diabetes.csv', delimiter=',')
 X = dataset[:,0:8]
 y = dataset[:,8]
 input_shape=(8,)
-create_model(X,y,input_shape,losses, layers_list, activations_list, optimizer_list, epochs)
+create_model(X,y,input_shape,losses, layers_list, activations_list, optimizer_list, epochs, False)
