@@ -1,14 +1,10 @@
 # -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
 
 import tensorflow
 from keras.models import Sequential
 from keras.layers import Dense, Input
 import keras
+#import uuid for uniquely naming solutions
 from uuid import uuid4
 from keras.models import model_from_json
 #supress warnings because they serve no purpose
@@ -109,9 +105,14 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
     #add layers and appropriate activations
     counter=0
     for p in param_combinations:
-        print(round(counter/len(param_combinations)*100,2),"% DONE")
         #increase counter
         counter-=-1
+        if verbose:
+            print(50*'-')
+        print("MODELS TRAINING - ", counter, "/", len(param_combinations))
+        if verbose:
+            print(50*'-')
+
         #print(p)
         model = Sequential()
         firstpass = True
@@ -120,11 +121,11 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
         for i,j in zip(p[1], p[2]):
             #add input layer info the the first layer added to model
             if firstpass:
-                model.add(Dense(i, activation=j, name=str(i)+str(j)+str(uuid4()),input_shape=input_shape_))
+                model.add(Dense(i, activation=j,input_shape=input_shape_))
                 firstpass=False
             #print(i,j)
             else:
-                model.add(Dense(i, activation=j,name=str(i)+str(j)+str(uuid4())))
+                model.add(Dense(i, activation=j))
         
         #output layer
         #model.add(Dense(1, activation='softmax'))
@@ -146,8 +147,10 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
 
 #definiranje parametara modela
 losses=['mean_squared_error']
-layers_list = [(4,5,5,4,1), (2,2,1)]
-activations_list = [('sigmoid','relu','relu','sigmoid', 'sigmoid'), ('sigmoid', 'softmax', 'sigmoid')]
+layers_list = [(4,5,5,4,1), 
+               (2,2,1)]
+activations_list = [('sigmoid','relu','relu','sigmoid', 'sigmoid'), 
+                    ('sigmoid', 'softmax', 'sigmoid')]
 epochs = [5,10,20]
 
 #optimizer
@@ -160,10 +163,13 @@ momentums = [0.0, 0.02]
 nesterov = [True, False]
 
 
-optimizer_params_sgd = [{"types": t, "lr": lr_, "momentum": momentums_, "nesterov": nesterov_} for t in types
-                                                                                            for lr_ in lr
-                                                                                            for momentums_ in momentums
-                                                                                            for nesterov_ in nesterov]
+optimizer_params_sgd = [{"types": t, 
+                         "lr": lr_, 
+                         "momentum": momentums_, 
+                         "nesterov": nesterov_} for t in types
+                                                for lr_ in lr
+                                                for momentums_ in momentums
+                                                for nesterov_ in nesterov]
 
 types = ["adam"]
 lr = [0.2, 0.02]
@@ -171,20 +177,27 @@ beta1 = [0.5, 0.02]
 beta2 = [0.9, 0.95]
 amsgrad = [True, False]
 
-optimizer_params_adam = [{"types": t, "lr": lr_, "beta1": beta1_, "beta2": beta2_, "amsgrad": amsgrad_} for t in types
-                                                                                                         for lr_ in lr
-                                                                                                         for beta1_ in beta1
-                                                                                                         for beta2_ in beta2
-                                                                                                         for amsgrad_ in amsgrad]
-optimizer_params=optimizer_params_sgd+optimizer_params_adam
+optimizer_params_adam = [{"types": t, 
+                          "lr": lr_, 
+                          "beta1": beta1_, 
+                          "beta2": beta2_, 
+                          "amsgrad": amsgrad_}  for t in types
+                                                for lr_ in lr
+                                                for beta1_ in beta1
+                                                for beta2_ in beta2
+                                                for amsgrad_ in amsgrad]
 
+optimizer_params=optimizer_params_sgd+optimizer_params_adam
+print("Number of optimizers to be created: ",len(optimizer_params))
 
 
 optimizer_list = []
 
+count=0
 for op in optimizer_params:
-   # print(op)
-    optimizer_list.append(optimizer_get(op))
+   print("OPTIMIZER GENERATION - ", count, "/", len(optimizer_params))
+   count -=-1
+   optimizer_list.append(optimizer_get(op))
 
 #Učitavanje podataka
 from numpy import loadtxt
