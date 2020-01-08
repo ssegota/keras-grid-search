@@ -12,6 +12,8 @@ import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import roc_auc_score
 """
 param_dict - dictionary sa parametrime
 
@@ -94,13 +96,16 @@ verbose - ispis model summarya i training informationa - (bool)
 """
 def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs, verbose=True):
 
-    param_combinations = [[l_,la_,a_,op_,e_] for l_ in loss
-                                                  for la_ in layers
-                                                  for a_ in activations
-                                                  for op_ in adjusted_optimizers
-                                                  for e_ in epochs]
+    param_combinations = [[l_,la_,a_,op_,e_]    for l_ in loss
+                                                for la_ in layers
+                                                for a_ in activations
+                                                for op_ in adjusted_optimizers
+                                                for e_ in epochs]
         
-    
+    X_ = X[0:int(.75*len(X))]
+    Y_ = Y[0:int(.75*len(Y))]
+    x = X[int(.75*len(X)):]
+    y = Y[int(.75*len(Y)):]
     print("Number of Grid Search Components:", len(param_combinations))
     #add layers and appropriate activations
     counter=0
@@ -133,16 +138,22 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
         model.compile(loss=p[0],
                       optimizer=p[3],
                       metrics=['accuracy'])
-        model.fit(X,Y, epochs=p[4], verbose=verbose)
-        #prin model summaries
+        model.fit(X_,Y_, epochs=p[4], verbose=verbose)
+        #print model summaries
         if verbose:
             model.summary()
+        y_predicted=model.predict(x, verbose=verbose)
+        
+        #for now, use auc scoring
+        auc_score = roc_auc_score(y, y_predicted)
+        print("MODEL", counter, "AUC SCORE = ", auc_score)
+        
         #save model
         name=str(uuid4())
         json_data=model.to_json()
-        with open(name+".json", "w") as json_file:
+        with open(str(round(auc_score,2))+name+".json", "w") as json_file:
             json_file.write(json_data)
-        model.save_weights(name+".h5")
+        model.save_weights(str(round(auc_score,2))+name+".h5")
     
 
 #definiranje parametara modela
