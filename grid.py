@@ -22,7 +22,8 @@ from sklearn.metrics import mean_squared_log_error
 from sklearn.metrics import max_error
 from sklearn.metrics import r2_score
 """
-param_dict - dictionary sa parametrime
+optimizer_get: funkcija za kompilaciju optimizera sa danim parametrima
+param_dict - dictionary sa parametrima
 
 Popis keyeva:
 sgd
@@ -52,67 +53,117 @@ nadam
     beta2       (float)
     
 """
-def optimizer_get(param_dict):
-    optimizer_type = param_dict["types"]
-    optimizer_list= ['sgd', 'adam', 'rmsprop', 'adagrad','adadelta', 'adamax','nadam']
-    
-    if optimizer_type=='sgd':
-        optimizer=keras.optimizers.SGD(lr=param_dict["lr"], 
-                                      momentum=param_dict["momentum"],
-                                      nesterov=param_dict["nesterov"])
-        return optimizer
-    elif optimizer_type=='rmsprop':
-        optimizer=keras.optimizers.RMSprop(lr=param_dict["lr"], rho=param_dict["rho"])
-        return optimizer
-    elif optimizer_type=='adagrad':
-        optimizer=keras.optimizers.Adagrad(lr=param_dict["lr"])
-        return optimizer
-    elif optimizer_type=='adadelta':
-        optimizer=keras.optimizers.Adadelta(lr=param_dict["lr"], rho=param_dict["rho"])
-        return optimizer
-    elif optimizer_type=='adam':
-        optimizer=keras.optimizers.Adam(lr=param_dict["lr"], beta_1=param_dict["beta1"],beta_2=param_dict["beta2"],amsgrad=param_dict["amsgrad"])
-        return optimizer
-    elif optimizer_type=='adamax':
-        optimizer=keras.optimizers.Adamax(lr=param_dict["lr"], beta_1=param_dict["beta1"], beta_2=param_dict["beta2"])
-        return optimizer
-    elif optimizer_type=='nadam':
-        optimizer=keras.optimizers.Nadam(lr=param_dict["lr"], beta_1=param_dict["beta1"], beta_2=param_dict["beta2"])
-        return optimizer
-    else:
-        print("Chosen optimizer unsupported, choose between: ", optimizer_list)
-        return None
-    
+def get_optimizers(params):
+    optimizer_list = []
+
+    count=0
+
+    print("LENGTH OF PARAMETERES:", len(params))
+    for param_dict in params:
+        print("OPTIMIZER GENERATION - ", count, "/", len(optimizer_params))
+        count -=-1
+        optimizer_type = param_dict["types"]
+        optimizers= ['sgd', 
+                         'adam', 
+                         'rmsprop', 
+                         'adagrad',
+                         'adadelta', 
+                         'adamax',
+                         'nadam']
+        
+        if optimizer_type=='sgd':
+            optimizer=keras.optimizers.SGD(lr=param_dict["lr"], 
+                                          momentum=param_dict["momentum"],
+                                          nesterov=param_dict["nesterov"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='rmsprop':
+            optimizer=keras.optimizers.RMSprop(lr=param_dict["lr"], 
+                                               rho=param_dict["rho"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='adagrad':
+            optimizer=keras.optimizers.Adagrad(lr=param_dict["lr"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='adadelta':
+            optimizer=keras.optimizers.Adadelta(lr=param_dict["lr"], 
+                                                rho=param_dict["rho"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='adam':
+            optimizer=keras.optimizers.Adam(lr=param_dict["lr"], 
+                                            beta_1=param_dict["beta1"],
+                                            beta_2=param_dict["beta2"],
+                                            amsgrad=param_dict["amsgrad"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='adamax':
+            optimizer=keras.optimizers.Adamax(lr=param_dict["lr"], 
+                                              beta_1=param_dict["beta1"], 
+                                              beta_2=param_dict["beta2"])
+            optimizer_list.append(optimizer)
+            
+        elif optimizer_type=='nadam':
+            optimizer=keras.optimizers.Nadam(lr=param_dict["lr"], 
+                                             beta_1=param_dict["beta1"], 
+                                             beta_2=param_dict["beta2"])
+            optimizer_list.append(optimizer)
+            
+        else:
+            print("Chosen optimizer unsupported, choose between: ", optimizers)
+
+    return optimizer_list
         
 """
-stvara i trenira modele Koristeći parametre. Trenirani modeli spremljeni u JSON sa težinama u H5.
+Stvara i trenira modele Koristeći parametre. Trenirani modeli spremljeni u 
+    JSON sa težinama u H5.
 
 Argumnti
 
-X - Ulazni Podaci (Array)
-Y - Izlazni Podaci (Array)
-input_shape - oblik ulaza (tuple of ints)
-loss - lista korištenih lossova (list of strings)
-layers - lista tupleova koji sadrže različite konfiguracije mreže - (list of tuple of Ints)
-        svaki tuple je niz brojeva koji odgovaraju broju neurona u svakom skrivenom sloju
-activations - lista tupleova iste duljine kao i gornjih layera, koji sadrže aktivacije za svaki od gore navedenih slojeva - (list of tuple of Strings)
-adjusted_optimizers - lista optimizera dobivenih korištenjem funkcije optimizer_get() - (list of keras.Optimizers)
-epochs - lista sa brojvima epoha - (list of ints)
-eval_metrics - lista metrika za evaluaciju modela tijekom treniranja - (list of strings)
-prediction_metric - metrika za određivanje kvalitete predikcije - (string)
-    Moguće metrike:
-        auc - Area Under Curve
-        accuracy - preciznost
-        mae - Mean Average Error
-        mse - Mean Square Error
-        msle - Mean Square Log Error
-        max - Maximal Error
-        r2 - R2 score
-verbose - ispis model summarya i training informationa - (bool)
+X                   (Array)                     Ulazni Podaci
+Y                   (Array)                     Izlazni Podaci
+input_shape         (tuple of ints)             oblik ulaznih podataka 
+loss                (list of strings)           lista korištenih lossova 
+layers              (list of tuple of Ints)     Različite konfiguracije ANN - 
+                                                svaki tuple je niz brojeva koji 
+                                                odgovaraju broju neurona u 
+                                                svakom skrivenom sloju
+activations         (list of tuple of Strings)  lista tupleova iste duljine kao
+                                                i gornjih layera, koji sadrže 
+                                                aktivacije za svaki od gore 
+                                                navedenih slojeva 
+adjusted_optimizers (list of keras.Optimizers)  lista optimizera dobivenih 
+                                                korištenjem funkcije 
+                                                optimizer_get() 
+epochs              (list of ints)              lista sa brojvima epoha 
+eval_metrics        (list of strings)           lista metrika za evaluaciju 
+                                                modela tijekom treniranja
+prediction_metric   (string)                    metrika za određivanje 
+                                                kvalitete predikcije 
+                                                Moguće metrike:
+                                                auc - Area Under Curve
+                                                accuracy - preciznost
+                                                mae - Mean Average Error
+                                                mse - Mean Square Error
+                                                msle - Mean Square Log Error
+                                                max - Maximal Error
+                                                r2 - R2 score
+verbose             (bool)                      ispis model summarya i training 
+                                                informationa
 
 
 """
-def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs, eval_metrics, prediction_metric, verbose=True):
+def create_model(X, 
+                 Y, 
+                 input_shape_, 
+                 loss, layers, 
+                 activations, 
+                 adjusted_optimizers, 
+                 epochs, 
+                 eval_metrics, 
+                 prediction_metric, 
+                 verbose=True):
 
     param_combinations = [[l_,la_,a_,op_,e_]    for l_ in loss
                                                 for la_ in layers
@@ -247,13 +298,8 @@ optimizer_params=optimizer_params_sgd+optimizer_params_adam
 print("Number of optimizers to be created: ",len(optimizer_params))
 
 
-optimizer_list = []
+optimizer_list = get_optimizers(optimizer_params)
 
-count=0
-for op in optimizer_params:
-   print("OPTIMIZER GENERATION - ", count, "/", len(optimizer_params))
-   count -=-1
-   optimizer_list.append(optimizer_get(op))
 
 #Učitavanje podataka
 from numpy import loadtxt
@@ -263,4 +309,14 @@ dataset = loadtxt('pima-indians-diabetes.csv', delimiter=',')
 X = dataset[:,0:8]
 y = dataset[:,8]
 input_shape=(8,)
-create_model(X,y,input_shape,losses, layers_list, activations_list, optimizer_list, epochs, evaluation_metrics, 'auc', False)
+create_model(X,
+             y,
+             input_shape,
+             losses, 
+             layers_list, 
+             activations_list, 
+             optimizer_list, 
+             epochs, 
+             evaluation_metrics, 
+             'auc', 
+             False)
