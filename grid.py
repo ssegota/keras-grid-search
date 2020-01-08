@@ -2,18 +2,25 @@
 
 import tensorflow
 from keras.models import Sequential
-from keras.layers import Dense, Input
+from keras.layers import Dense
 import keras
 #import uuid for uniquely naming solutions
 from uuid import uuid4
-from keras.models import model_from_json
+#from keras.models import model_from_json
+
 #supress warnings because they serve no purpose
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
-from sklearn.model_selection import train_test_split
+#deter
 from sklearn.metrics import roc_auc_score
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import mean_absolute_error  
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_squared_log_error
+from sklearn.metrics import max_error
+from sklearn.metrics import r2_score
 """
 param_dict - dictionary sa parametrime
 
@@ -91,10 +98,21 @@ layers - lista tupleova koji sadrže različite konfiguracije mreže - (list of 
 activations - lista tupleova iste duljine kao i gornjih layera, koji sadrže aktivacije za svaki od gore navedenih slojeva - (list of tuple of Strings)
 adjusted_optimizers - lista optimizera dobivenih korištenjem funkcije optimizer_get() - (list of keras.Optimizers)
 epochs - lista sa brojvima epoha - (list of ints)
+eval_metrics - lista metrika za evaluaciju modela tijekom treniranja - (list of strings)
+prediction_metric - metrika za određivanje kvalitete predikcije - (string)
+    Moguće metrike:
+        auc - Area Under Curve
+        accuracy - preciznost
+        mae - Mean Average Error
+        mse - Mean Square Error
+        msle - Mean Square Log Error
+        max - Maximal Error
+        r2 - R2 score
 verbose - ispis model summarya i training informationa - (bool)
 
+
 """
-def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs, verbose=True):
+def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimizers, epochs, eval_metrics, prediction_metric, verbose=True):
 
     param_combinations = [[l_,la_,a_,op_,e_]    for l_ in loss
                                                 for la_ in layers
@@ -137,23 +155,50 @@ def create_model(X, Y, input_shape_, loss, layers, activations, adjusted_optimiz
         firstpass=True
         model.compile(loss=p[0],
                       optimizer=p[3],
-                      metrics=['accuracy'])
+                      metrics=eval_metrics)
         model.fit(X_,Y_, epochs=p[4], verbose=verbose)
         #print model summaries
         if verbose:
             model.summary()
         y_predicted=model.predict(x, verbose=verbose)
         
-        #for now, use auc scoring
-        auc_score = roc_auc_score(y, y_predicted)
-        print("MODEL", counter, "AUC SCORE = ", auc_score)
-        
+        #scoring
+        if prediction_metric == 'auc':
+            score = roc_auc_score(y, y_predicted)
+            print("MODEL", counter, "AUC SCORE = ", score)
+        elif prediction_metric == 'accuracy':
+            score = accuracy_score(y, y_predicted)
+            print("MODEL", counter, "ACCURACY SCORE = ", score)
+        elif prediction_metric == 'f1':    
+            score = f1_score(y, y_predicted)
+            print("MODEL", counter, "F1 SCORE = ", score)
+        elif prediction_metric == 'recall':    
+            score = recall_score(y, y_predicted)
+            print("MODEL", counter, "RECALL SCORE = ", score)
+        elif prediction_metric == 'mae':    
+            score = mean_absolute_error(y, y_predicted)
+            print("MODEL", counter, "MAE SCORE = ", score)
+        elif prediction_metric == 'mse':    
+            score = mean_squared_error(y, y_predicted)
+            print("MODEL", counter, "MSE SCORE = ", score)
+        elif prediction_metric == 'msle':    
+            score = mean_squared_log_error(y, y_predicted)
+            print("MODEL", counter, "MSLE SCORE = ", score)
+        elif prediction_metric == 'max':    
+            score = max_error(y, y_predicted)
+            print("MODEL", counter, "MAX-ERROR SCORE = ", score)
+        elif prediction_metric == 'r2':    
+            score = r2_score(y, y_predicted)
+            print("MODEL", counter, "R2 SCORE = ", score)
+        else:
+            print("Non existant metric selected, exiting...")
+            return
         #save model
         name=str(uuid4())
         json_data=model.to_json()
-        with open(str(round(auc_score,2))+name+".json", "w") as json_file:
+        with open(str(round(score,2))+name+".json", "w") as json_file:
             json_file.write(json_data)
-        model.save_weights(str(round(auc_score,2))+name+".h5")
+        model.save_weights(str(round(score,2))+name+".h5")
     
 
 #definiranje parametara modela
@@ -163,7 +208,7 @@ layers_list = [(4,5,5,4,1),
 activations_list = [('sigmoid','relu','relu','sigmoid', 'sigmoid'), 
                     ('sigmoid', 'softmax', 'sigmoid')]
 epochs = [5,10,20]
-
+evaluation_metrics = ['accuracy']
 #optimizer
 #definiranje parametara za solvere
 #potrebno jeza svaki solver definirati odvojeno parametre
@@ -218,4 +263,4 @@ dataset = loadtxt('pima-indians-diabetes.csv', delimiter=',')
 X = dataset[:,0:8]
 y = dataset[:,8]
 input_shape=(8,)
-create_model(X,y,input_shape,losses, layers_list, activations_list, optimizer_list, epochs, False)
+create_model(X,y,input_shape,losses, layers_list, activations_list, optimizer_list, epochs, evaluation_metrics, 'auc', False)
