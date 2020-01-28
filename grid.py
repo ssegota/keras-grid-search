@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 import tensorflow
-from keras.models import Sequential
-from keras.layers import Dense
-import keras
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+import tensorflow.keras as keras
 #import uuid for uniquely naming solutions
 from uuid import uuid4
 #from keras.models import model_from_json
@@ -319,4 +319,4 @@ create_model(X,
              epochs, 
              evaluation_metrics, 
              'auc', 
-             False)
+             True)
